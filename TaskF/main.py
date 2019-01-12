@@ -4,7 +4,7 @@
 
 import time, sys
 
-sys.stdin = open("test1", "r")
+sys.stdin = open("C:\\HDDs\\ST500DM002\\Part1\\PROJECTS\\MISHA\\SPB2019\\TaskF\\test62.txt", "r")
 
 global CACHE_LIST
 
@@ -26,6 +26,9 @@ def find_list_of_prost(n):
 
 
 def razl_na_mn(ch, prostik):
+    if ch == 1:
+        mas = [(1, 1)]
+        return mas
     mas = []
 
     for e in prostik:
@@ -39,7 +42,7 @@ def razl_na_mn(ch, prostik):
         if ch == 1:
             break
     else:
-        throw(RuntimeError('razl_na_mn'))
+        raise RuntimeError('razl_na_mn')
 
     return mas
 
@@ -101,7 +104,7 @@ def main():
 
     CACHE_LIST = [-1 for i in range(omg)]
 
-    # max_answer = 0
+    total_ot = 0
     for i in range(con):
         if i % 10000 == 0:
             print("GOD", i / 1000000 * 100)
@@ -124,9 +127,27 @@ def main():
                     break
 
                 con += 1
+                
+        total_ot += ot
+        #print(ot)
+        
+    print(total_ot)
 
-        print(ot)
+def test():
+    CACHE_LIST = []
+    omg = int(input())
+    mask = [int(e) for e in input().split(" ")]
+    con = int(input())
 
+    max_ch = max(mask)
+    print(max_ch)
+    prost_ch = find_list_of_prost(max_ch)
 
+    check_sum = 0
+    for ch in mask:
+        check_sum += sum(find_answer(ch, prost_ch))
+
+    print(check_sum)
+    
 if __name__ == "__main__":
     main()
