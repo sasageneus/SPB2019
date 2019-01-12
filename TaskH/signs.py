@@ -3,8 +3,9 @@ import sys
 N = None
 LST = None
 RESULT = []
+CACHE = []
 
-MOD = pow(10, 16)
+MOD = pow(10, 9) + 7
 
 def read_data():
     global LST, N
@@ -18,23 +19,44 @@ def append_member(idx):
     for i in range(10):
         if RESULT[idx-1][i] > 0:
             res_idx[(i + value) % 10] += RESULT[idx-1][i]
-    
+
     #print(res_idx)
     multiplier = (value * LST[idx - 1]) % 10
+    mult_start = multiplier
     k = idx - 2
+    res_mult = [0 for i in range(10)]    
     while k >= 0:
+        if k < (idx - 2) and CACHE[k][0] == multiplier:
+            #print('idx %d k=%d' % (idx, k))            
+            cache_k = CACHE[k][1]
+            #print(cache_k)
+            for i in range(10):        
+                res_mult[i] += cache_k[i]
+            multiplier = CACHE[k][2]
+            break
+            
         res_k = RESULT[k]
         for i in range(10):
             if res_k[i] > 0:
-                res_idx[(i + multiplier) % 10] += res_k[i]
-                res_idx[(i + multiplier) % 10]%=MOD
+                res_mult[(i + multiplier) % 10] += res_k[i]
         multiplier = (multiplier * LST[k]) % 10        
         k -= 1
-        
+
+    if idx - 2 >= 0:
+        CACHE.append((mult_start, res_mult, multiplier))
+        #print('append cache')
+
     res_idx[multiplier % 10] += 1
     
+    for i in range(10):        
+        res_idx[i] = (res_idx[i] + res_mult[i]) % MOD
+
+    #print('cache')
+    #print(res_mult)
+        
+    #print(res_idx)
     RESULT.append(res_idx)
-    #print(RESULT[idx])
+    
 
 def resolve_H():
     RESULT.append([0 for i in range(10)])
@@ -48,6 +70,6 @@ def print_result(res):
 
 sys.stdin = open('test1000', 'r')
 read_data()
-print(LST)
+#print(LST)
 resolve_H()
 print_result(RESULT[-1])
