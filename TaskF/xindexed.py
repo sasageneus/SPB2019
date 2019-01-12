@@ -1,10 +1,7 @@
 
-CACHE1 = []
-CACHE10 = []
-CACHE100 = []
-CACHE1000 = []
 
-CACHE_LEVEL = ((1, CACHE1), (10, CACHE10), (100, CACHE100), (1000, CACHE1000))
+CACHE_LEVEL = [(1, [])]
+
 
 FACTOR = None
 
@@ -84,12 +81,12 @@ def create_x_index(ch):
 
 
 def get_cache_answer(a, b, x, level):
-    assert(x > 0)
     if level == 0:
+        cache1 = CACHE_LEVEL[0][1]
         ot = 0
         for j in range(a, b + 1):
-            if x < CACHE1[j][0]:
-                ot += CACHE1[j][x]
+            if x < cache1[j][0]:
+                ot += cache1[j][x]
         return ot
         
     mod, cache = CACHE_LEVEL[level]
@@ -103,12 +100,10 @@ def get_cache_answer(a, b, x, level):
                 
         left_b = ra * mod - 1
         if left_b - a >= 0:
-            assert(level > 0)
             ot+=get_cache_answer(a, left_b, x, level-1)
 
         right_a = (rb + 1) * mod
         if b - right_a >= 0:
-            assert(level > 0)
             ot+=get_cache_answer(right_a, b, x, level-1)
         
         return ot        
@@ -132,12 +127,20 @@ def merge_cache(to_cache, from_cache):
 
     to_cache[0] = len(to_cache)
 
-def fill_high_cache(cache_high, cache_low):
-    for i in range(len(cache_low)//10):
+def fill_high_cache(cache_high, cache_low, k):
+    for i in range(len(cache_low)//k):
         cache_high.append([])
         
-    for i in range(len(cache_low)//10*10):
-        merge_cache(cache_high[i//10], cache_low[i])
+    for i in range(len(cache_low)//k*k):
+        merge_cache(cache_high[i//k], cache_low[i])
+
+def fill_multilevel_cache(n, k):
+    prev_level_cache = CACHE_LEVEL[0][1]
+    for i in range(1, n):
+        next_level_cache = []
+        fill_high_cache(next_level_cache, prev_level_cache, k)
+        CACHE_LEVEL.append((pow(k, i), next_level_cache))
+        prev_level_cache = next_level_cache
 
 def test():
     global FACTOR
@@ -180,21 +183,21 @@ def test_cache_level():
     FACTOR = sieveOfEratosthenes(max_ch)        
     print(max_ch)
 
+    cache1 = CACHE_LEVEL[0][1]
+    
     check_sum = 0
     for ch in mask:
-        CACHE1.append(create_x_index(ch))     
+        cache1.append(create_x_index(ch))     
 
     print(check_sum)
 
-    fill_high_cache(CACHE10, CACHE1)
-    fill_high_cache(CACHE100, CACHE10)
-    fill_high_cache(CACHE1000, CACHE100)
+    fill_multilevel_cache(5, k=8)
 
     total_ot = 0
     for i in range(con):
         a, b, x = map(int,input().split(" "))
 
-        ot = get_cache_answer(a-1, b-1, x, level=3)
+        ot = get_cache_answer(a-1, b-1, x, level=4)
                
         total_ot += ot
         #sys.stdout.write(str(ot));sys.stdout.write('\n');
