@@ -43,4 +43,4 @@ def sample_generator(p_filename, p_len):
 LST = [0,1,2,3,4,5,6,7,8,9, 10,11,12,13,14,15]
 bruteforce()
 #print([i for i in range(10)])
-sample_generator('test1000', 1000)
+sample_generator('test100000', 100000)

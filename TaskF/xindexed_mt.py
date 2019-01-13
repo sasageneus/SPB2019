@@ -1,6 +1,6 @@
+import sys
 
-
-CACHE_LEVEL = [(1, [])]
+CACHE_LEVEL = []
 
 
 FACTOR = None
@@ -179,14 +179,14 @@ def test_cache_level():
     FACTOR = sieveOfEratosthenes(max_ch)        
     print(max_ch)
 
-    cache1 = CACHE_LEVEL[0][1]
+    cache1 = []
+    CACHE_LEVEL.append((1, cache1))
     
     check_sum = 0
     for ch in mask:
-        cache1.append(create_x_index(ch))
-        check_sum += cache1[-1][0]        
+        cache1.append(create_x_index(ch))     
 
-    print(check_sum)    
+    print(check_sum)
 
     fill_multilevel_cache(5, k=8)
 
@@ -202,39 +202,184 @@ def test_cache_level():
     print(total_ot)
 
 
+def create_x_index_worker(q):
+    cache1 = CACHE_LEVEL[0][1]
+    total_div = 0
+    
+    while True:
+        i, ch = q.get_nowait()
+        if ch is None:
+            break
+        cache1[i] = create_x_index(ch)
+        total_div += cache1[i][0]
+        #q.task_done()
 
-def test_fill_high_cache():
+    return total_div
+
+
+def task_F_mt():
     global FACTOR
-    
-    def find_answer(a,b,x,lvl):
-        ot = 0
-        for i in range(a,b):
-            ot = get_cache_answer(a, b, x, level=lvl)
-        return ot
 
-    print('test_fill_high_cache')
+    import queue
+    from  concurrent.futures import ThreadPoolExecutor    
+
     
+    def read_number_worker():
+        i = 0
+        for e in input().split(" "):
+            input_queue.put((i, int(e)))
+            i += 1
+        input_queue.put((-1, None))
+        input_queue.put((-1, None))
+
+    
+    executor = ThreadPoolExecutor(max_workers=8)
+    factor_fea = executor.submit(sieveOfEratosthenes, 1000000)
+
     omg = int(input())
-    mask = [int(e) for e in input().split(" ")]
+
+    print(omg)
+    
+    input_queue = queue.Queue(10000) #
+        
+    read_number_fea = executor.submit(read_number_worker)
+            
+    cache1 = [None for i in range(omg)]
+    CACHE_LEVEL.append((1, cache1));
+        
+    FACTOR = factor_fea.result()
+
+    print('FACTOR')
+
+    total_fut1 = executor.submit(create_x_index_worker, input_queue)
+    total_fut2 = executor.submit(create_x_index_worker, input_queue)
+
+    read_number_fea.result()
+
+    #while not input_queue.empty(): pass
+
+    print('Success!!! total diveders= %d' % (total_fut1.result() + total_fut2.result() ))
+    
     con = int(input())
 
-    max_ch = max(mask)
-    FACTOR = sieveOfEratosthenes(max_ch)        
-    print(max_ch)
 
-    check_sum = 0
-    for ch in mask:
-        CACHE1.append(create_x_index(ch))     
-
-    print(check_sum)
-
-    fill_high_cache(CACHE10, CACHE1)
-
-    print(find_answer(0,9,1,1))
-    print(find_answer(0,9,1,0))
-    assert(find_answer(0,9,1,1) == find_answer(0,9,1,0))
-    assert(find_answer(9,19,1,1) == find_answer(9,19,1,0))
+def task_F_mt2():
+    global FACTOR
     
+    import collections
+    from  concurrent.futures import ThreadPoolExecutor    
+
+    num_workers = 2
+    
+    def read_number_worker():
+        i = 0
+        for e in input().split(" "):
+            input_queue.append((i, int(e)))
+            i += 1
+
+        #flag stop work
+        for i in range(num_workers):
+            input_queue.append((-1, None))
+
+
+    def create_x_index_worker(q):
+        cache1 = CACHE_LEVEL[0][1]
+        total_div = 0
+        
+        while True:
+            try:
+                i, ch = q.popleft()
+            except IndexError:
+                continue            
+                
+            if ch is None:
+                break
+            cache1[i] = create_x_index(ch)
+            total_div += cache1[i][0]            
+            
+        return total_div
+
+    
+    executor = ThreadPoolExecutor(max_workers=8)
+    factor_fut = executor.submit(sieveOfEratosthenes, 1000000)
+
+    omg = int(input())
+
+    print(omg)
+    
+    input_queue = collections.deque() #
+        
+    read_number_fut = executor.submit(read_number_worker)
+            
+    cache1 = [None for i in range(omg)]
+    CACHE_LEVEL.append((1, cache1));
+        
+    FACTOR = factor_fut.result()
+
+    print('FACTOR')
+    
+    workers = [executor.submit(create_x_index_worker, input_queue) for i in range(num_workers)]
+
+    read_number_fut.result()
+
+    #while not input_queue.empty(): pass
+
+    print('Success!!! total diveders= %d' % (sum([w.result() for w in workers])))
+
+    fill_multilevel_cache(4, k=8)
+    
+    con = int(input())
+
+    import time
+
+    ttt = 0
+    
+    def find_answer_worker(num):
+        print('num')
+        while 1:
+            ttt += 1
+            print('ttt')
+            try:
+                i, a, b, x = task_queue.popleft()
+                print('iabx')               
+            except IndexError:
+                continue
+                
+            if x is None:
+                break
+            
+            answer_list[i] = get_cache_answer(a-1, b-1, x, level=3)
+        return ttt
+            
+
+    task_queue = collections.deque() #
+    
+    workers = [executor.submit(find_answer_worker, i) for i in range(num_workers)]
+
+    answer_list = [None for i in range(con)]
+    
+    total_ot = 0
+    for i in range(con):
+        a, b, x = map(int,input().split(" "))
+        task_queue.append((i,a,b,x))
+
+    #stop flag
+    for i in range(num_workers):
+        task_queue.append((-1,-1,-1,None))
+
+    for i in range(con):
+        print(i)
+        while answer_list[i] is None:
+            print(ttt) 
+            time.sleep(1)
+        
+        total_ot += answer_list[i]
+        #sys.stdout.write(str(ot));sys.stdout.write('\n');
+        
+    print(total_ot)
+    
+    
+  
 def test_create_x_index(num):
     global FACTOR
     FACTOR = sieveOfEratosthenes(200000)
@@ -249,9 +394,8 @@ def test_razl_na_mn():
     pass
     
 if __name__ == "__main__":
-    import sys
     sys.stdin = open("C:\\HDDs\\ST500DM002\\Part1\\PROJECTS\\MISHA\\SPB2019\\TaskF\\test62.txt", "r")
-    test_cache_level()
-    #test_fill_high_cache()
+    #test_cache_level()
+    task_F_mt2()
     
 
